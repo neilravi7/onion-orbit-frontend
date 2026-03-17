@@ -11,25 +11,45 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [registrationStep, setRegistrationStep] = useState('form'); // 'form' or 'success'
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+  
+  
+
+  const { register, setValue, handleSubmit, formState: { errors }, watch } = useForm({
     defaultValues: {
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      is_customer:true,
+      is_vendor:false
     }
   });
 
-  const password = watch('password');
+  const handleUserTypeChange = (type) => {
+    console.log("handleUserTypeChange")
+    setUserType(type)
+    if (type === 'customer') {
+      setValue('is_customer', true);
+      setValue('is_vendor', false);
+      console.log("type", type)
+    } else {
+      setValue('is_customer', false);
+      setValue('is_vendor', true);
+    }
+};
 
+  const password = watch('password');
+  
   const onSubmit = async (data) => {
     setIsLoading(true);
+    console.log(data)
+
     try {
       // TODO: Replace with actual API call
-      console.log(`${userType} registration:`, {
-        email: data.email,
-        password: data.password,
-        userType
-      });
+      // console.log(`${userType} registration:`, {
+      //   email: data.email,
+      //   password: data.password,
+      //   userType
+      // });
       // Example: POST to /api/auth/register
       // const response = await fetch('/api/auth/register', {
       //   method: 'POST',
@@ -131,7 +151,7 @@ export default function Register() {
           {['customer', 'vendor'].map((type) => (
             <motion.button
               key={type}
-              onClick={() => setUserType(type)}
+              onClick={() => handleUserTypeChange(type)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className={`flex-1 py-2.5 px-4 rounded-lg font-semibold transition-all ${
@@ -151,6 +171,10 @@ export default function Register() {
           className="space-y-6"
           variants={itemVariants}
         >
+          {/* is_customer Field */}
+          <input type="hidden" {...register("is_customer")} />
+          {/* is_vendor Field */}
+          <input type="hidden" {...register("is_vendor")} />
           {/* Email Field */}
           <motion.div variants={itemVariants}>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
