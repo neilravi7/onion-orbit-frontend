@@ -1,73 +1,60 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { set, useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, UserPlus, Check, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import {useSelector, useDispatch} from 'react-redux';
+import { signUpUser, clearAuthState } from '../redux/auth/authSlice';
+import {toast} from 'react-toastify'
 
 export default function Register() {
+  // redux
+  const dispatch = useDispatch();
+  const {success, message, inProgress} = useSelector((state) => state.auth );
+  
+  // UI state variables
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userType, setUserType] = useState('customer'); // 'customer' or 'vendor'
-  const [isLoading, setIsLoading] = useState(false);
   const [registrationStep, setRegistrationStep] = useState('form'); // 'form' or 'success'
-
-  
-  
 
   const { register, setValue, handleSubmit, formState: { errors }, watch } = useForm({
     defaultValues: {
       email: '',
       password: '',
       confirmPassword: '',
-      is_customer:true,
-      is_vendor:false
+      is_vendor:false,
+      is_customer:true
     }
   });
 
-  const handleUserTypeChange = (type) => {
-    console.log("handleUserTypeChange")
+  const handleUserTypeChange = (type) =>{
     setUserType(type)
-    if (type === 'customer') {
-      setValue('is_customer', true);
-      setValue('is_vendor', false);
-      console.log("type", type)
-    } else {
-      setValue('is_customer', false);
-      setValue('is_vendor', true);
+    if(type === 'customer'){
+      setValue('is_customer', true)
+      setValue('is_vendor', false)
+    }else{
+      setValue('is_customer', false)
+      setValue('is_vendor', true)
     }
-};
+  } 
 
   const password = watch('password');
-  
-  const onSubmit = async (data) => {
-    setIsLoading(true);
-    console.log(data)
 
-    try {
-      // TODO: Replace with actual API call
-      // console.log(`${userType} registration:`, {
-      //   email: data.email,
-      //   password: data.password,
-      //   userType
-      // });
-      // Example: POST to /api/auth/register
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     email: data.email,
-      //     password: data.password,
-      //     userType
-      //   })
-      // });
+  const onSubmit = async (data) => {
+    
+      const {password, confirmPassword, ...rest} = data
+      const requestPayloads = { ...rest, password1:password, password2:confirmPassword}
       
-      // Show success screen
-      setRegistrationStep('success');
-    } catch (error) {
-      console.error('Registration error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+      dispatch(signUpUser(requestPayloads)).unwrap().then(()=>{
+        // show success screen
+        setRegistrationStep('success');
+        dispatch(clearAuthState());
+      }).catch((error)=>{
+        console.log(error)
+        toast.error(error);
+        dispatch(clearAuthState());
+      });
   };
 
   const containerVariants = {
@@ -171,10 +158,6 @@ export default function Register() {
           className="space-y-6"
           variants={itemVariants}
         >
-          {/* is_customer Field */}
-          <input type="hidden" {...register("is_customer")} />
-          {/* is_vendor Field */}
-          <input type="hidden" {...register("is_vendor")} />
           {/* Email Field */}
           <motion.div variants={itemVariants}>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
@@ -273,12 +256,12 @@ export default function Register() {
           {/* Submit Button */}
           <motion.button
             type="submit"
-            disabled={isLoading}
+            disabled={inProgress}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-3 bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-bold rounded-xl transition shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {inProgress ? (
               <>
                 <Loader className="w-5 h-5 animate-spin" />
                 Creating account...

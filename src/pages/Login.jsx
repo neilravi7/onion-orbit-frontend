@@ -3,31 +3,43 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, UtensilsCrossed, Loader } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { signInUser, clearAuthState } from '../redux/auth/authSlice';
+import { toast } from 'react-toastify';
 
 export default function Login() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { inProgress, userRole, isAuthenticated, user } = useSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState('customer');
-  const [isLoading, setIsLoading] = useState(false);
+
+
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { email: '', password: '' }
   });
 
   const onSubmit = async (data) => {
-    setIsLoading(true);
     try {
-      console.log(`${userType} login:`, data);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // unwrap ensures you wait for the thunk to finish
+      const response = await dispatch(signInUser(data)).unwrap();
+
+      setUserType(response.user_info.user_role);
+      toast.success("Login successful!");
+      console.log("user:", user);
+      console.log("response", response.user_info.user_role);
+      console.log("userType: ", userType);
       if (userType === 'vendor') {
+        console.log("vendor case");
         navigate('/vendor/profile-setup');
       } else {
+        console.log("customerCase");
         navigate('/customer/dashboard');
       }
-    } catch (error) {
-      console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(e || "Login failed");
+      dispatch(clearAuthState());
     }
   };
 
@@ -97,11 +109,10 @@ export default function Login() {
                 onClick={() => setUserType(type)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`flex-1 py-2.5 px-4 rounded-lg font-semibold transition-all ${
-                  userType === type
+                className={`flex-1 py-2.5 px-4 rounded-lg font-semibold transition-all ${userType === type
                     ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-lg'
                     : 'bg-transparent text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </motion.button>
@@ -180,12 +191,12 @@ export default function Login() {
             {/* Submit Button */}
             <motion.button
               type="submit"
-              disabled={isLoading}
+              disabled={inProgress}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3 bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-bold rounded-xl transition shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {inProgress ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
                   Signing in...
